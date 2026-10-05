@@ -42,7 +42,7 @@ header{
    display: flex;
    justify-content: space-between;
    align-items: center;
-   background: #E2E8F0; ;
+   background: #E2E8F0; 
    padding: 10px;
    border-radius: 8px;
    width: 100%;
@@ -196,6 +196,7 @@ header{
   align-items: center;
   margin-top: -135px;
   display: none;
+  z-index: 1;
 }
 .task-modal.is-open {
   display: flex;
@@ -260,8 +261,18 @@ header{
 }
 .btn-div button {
   font-size: 15px;
-  padding: 3px;
+  padding: 5px;
   margin: 2px;
+   background: #4F46E5;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+}
+.btn-div  .cancel{
+  color: #334155;
+  border: 1px solid #CBD5E1;
+  background: #fff;
+  color: #334155;
 }
 .column-modal-overlay {
   position: fixed;
@@ -282,6 +293,7 @@ header{
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 24px 60px rgb(15 23 42 / 22%);
+  z-index: 1;
 }
 .column-modal h2 {
   margin-bottom: 4px;

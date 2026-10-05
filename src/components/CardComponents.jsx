@@ -260,7 +260,7 @@ export const CardComponents = ({columns, setColumns}) => {
                 />
             </div>
             <div className="btn-div">
-                <button onClick={() => setOpenModalId(null)}>Cancel</button>
+                <button onClick={() => setOpenModalId(null)} className="cancel">Cancel</button>
                 <button onClick={() => {
                   if (addTask(column.id)) setOpenModalId(null);
                 }}>

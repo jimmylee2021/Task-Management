@@ -29,12 +29,12 @@ const loadColumns = () => {
 };
 
 const columnColors = [
+  { name: "Grey", value: "#E2E8F0;" },
   { name: "Slate", value: "#F1F5F9" },
   { name: "Rose", value: "#FFE4E6" },
   { name: "Amber", value: "#FEF3C7" },
   { name: "Lime", value: "#ECFCCB" },
   { name: "Teal", value: "#CCFBF1" },
-  { name: "Sky", value: "#E0F2FE" },
   { name: "Violet", value: "#EDE9FE" },
   { name: "Pink", value: "#FCE7F3" },
 ];
