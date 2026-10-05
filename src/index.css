@@ -12,7 +12,7 @@ body {
 .main {
   display: flex;
   flex-direction: column;
-  max-height: 100dvh;
+  min-height: 100dvh;
 }
 
 .header {
