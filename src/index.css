@@ -13,6 +13,8 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
+  overflow-x: auto;
+  overflow-y: auto;
 }
 
 .header {
@@ -28,7 +30,6 @@ header{
   align-items: center;
   padding: 10px;
   justify-content: space-between;
-  z-index: 9999;
 }
 .column-btn button {
   padding: 10px 24px;
@@ -69,15 +70,14 @@ header{
 .card-div {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   padding: 20px;
-  margin: 5px;
-  height: 100vh;
+  margin: 10px;
   border-radius: 8px;
   background: #F1F5F9;
   width: 300px;
- 
+  height: calc(100dvh - 100px);
 }
 .dots {
   display: flex;
@@ -100,6 +100,8 @@ header{
 }
 .card-list {
   overflow-y: auto;
+  flex: 1;
+  min-height: 0;
   margin-top: 20px;
   width: 100%;
 }
@@ -376,6 +378,8 @@ header{
   line-height: 30px;
 }
 
-@media (max-width: 400px) {
-
+@media only screen  and (max-width: 500px) {
+      header h1{
+        font-size: 18px;
+      }
 }
