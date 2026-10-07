@@ -49,7 +49,7 @@ function App() {
     try {
       localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(columns));
     } catch {
-      // The board remains usable if browser storage is unavailable or full.
+      
     }
   }, [columns]);
 
