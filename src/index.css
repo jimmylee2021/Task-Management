@@ -53,14 +53,7 @@ header{
   font-size: 15px;
   color: #0F172A;
   text-align: left;
-}
-.column-header button {
-  padding: 5px 10px;
-  border-radius: 8px;
-  outline: none;
-  border: none;
-  background: #4F46E5;
-  color: #fff;
+  overflow-wrap: anywhere;
 }
 
 .main-card-div {
@@ -68,6 +61,7 @@ header{
   margin-top: 80px;
 }
 .card-div {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -79,24 +73,102 @@ header{
   width: 300px;
   height: calc(100dvh - 100px);
 }
-.dots {
+.card-div {
+  cursor: grab;
+}
+.card-div:active {
+  cursor: grabbing;
+}
+.card-div.is-column-dragging {
+  opacity: 0.45;
+}
+.card-div.column-drop-before::before,
+.card-div.column-drop-after::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 3px;
+  background: #4F46E5;
+  content: "";
+}
+.card-div.column-drop-before::before {
+  left: -7px;
+}
+.card-div.column-drop-after::after {
+  right: -7px;
+}
+.column-header-actions {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
 }
-.delete-btn{
-  background: transparent;
+.column-task-count {
+  display: grid;
+  min-width: 26px;
+  height: 26px;
+  place-items: center;
+  padding: 0 7px;
+  border-radius: 8px;
+  background: #4F46E5;
+  color: #fff;
+  font-size: 12px;
+}
+.column-header .column-menu-trigger {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  padding: 0;
   border: none;
   border-radius: 8px;
-  padding: 8px;
-  background: #4F46E5;
-  font-size: 12px;
-  outline: none;
-  color: #fff;
+  background: transparent;
+  color: #334155;
+  cursor: pointer;
 }
-.column-del-icon {
-  font-size: 12px;
+.column-header .column-menu-trigger:hover,
+.column-header .column-menu-trigger:focus-visible {
+  background: rgb(15 23 42 / 8%);
+  outline: none;
+}
+.column-menu-dropdown {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 6px);
+  right: 0;
+  display: flex;
+  min-width: 160px;
+  flex-direction: column;
+  padding: 5px;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 10px 25px rgb(15 23 42 / 15%);
+}
+.column-header .column-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #334155;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.column-header .column-menu-item:hover,
+.column-header .column-menu-item:focus-visible {
+  background: #F1F5F9;
+  outline: none;
+}
+.column-header .delete-column-item {
+  color: #DC2626;
 }
 .card-list {
   overflow-y: auto;

@@ -1,20 +1,89 @@
-import { useState } from "react";
-import { FaEdit, FaTrash} from "react-icons/fa";
+import { useEffect, useState } from "react";
+import { FaEdit, FaEllipsisV, FaTrash } from "react-icons/fa";
 
 
 export const CardComponents = ({columns, setColumns}) => {
   const [openModalId, setOpenModalId] = useState(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [dropTarget, setDropTarget] = useState(null);
+  const [columnDropTarget, setColumnDropTarget] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
+  const [editingColumn, setEditingColumn] = useState(null);
+  const [openColumnMenuId, setOpenColumnMenuId] = useState(null);
+
+  useEffect(() => {
+    if (!openColumnMenuId) return undefined;
+
+    const closeMenuOnOutsideClick = (event) => {
+      if (!event.target.closest(".column-header-actions")) setOpenColumnMenuId(null);
+    };
+    const closeMenuOnEscape = (event) => {
+      if (event.key === "Escape") setOpenColumnMenuId(null);
+    };
+
+    document.addEventListener("pointerdown", closeMenuOnOutsideClick);
+    document.addEventListener("keydown", closeMenuOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeMenuOnOutsideClick);
+      document.removeEventListener("keydown", closeMenuOnEscape);
+    };
+  }, [openColumnMenuId]);
+
+  const columnDragType = "application/x-task-management-column";
+
+  const handleColumnDragStart = (event, columnId) => {
+    if (event.target.closest("button, .delete-btn, .container, textarea, input")) {
+      event.preventDefault();
+      return;
+    }
+
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData(columnDragType, columnId);
+    event.currentTarget.classList.add("is-column-dragging");
+  };
+
+  const handleColumnDragOver = (event, targetColumnId) => {
+    if (!Array.from(event.dataTransfer.types).includes(columnDragType)) return;
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const position = event.clientX < bounds.left + bounds.width / 2 ? "before" : "after";
+    setColumnDropTarget({ columnId: targetColumnId, position });
+  };
+
+  const handleColumnReorderDrop = (event, targetColumnId) => {
+    if (!Array.from(event.dataTransfer.types).includes(columnDragType)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    const sourceColumnId = event.dataTransfer.getData(columnDragType);
+    const targetBounds = event.currentTarget.getBoundingClientRect();
+    const position = event.clientX < targetBounds.left + targetBounds.width / 2 ? "before" : "after";
+
+    setColumns((previousColumns) => {
+      const sourceIndex = previousColumns.findIndex((column) => column.id === sourceColumnId);
+      const targetIndex = previousColumns.findIndex((column) => column.id === targetColumnId);
+      if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return previousColumns;
+
+      const nextColumns = [...previousColumns];
+      const [sourceColumn] = nextColumns.splice(sourceIndex, 1);
+      const insertionIndex = targetIndex + (position === "after" ? 1 : 0) - (sourceIndex < targetIndex ? 1 : 0);
+      nextColumns.splice(insertionIndex, 0, sourceColumn);
+      return nextColumns;
+    });
+    setColumnDropTarget(null);
+  };
 
   const handleTaskDragStart = (event, columnId, taskId) => {
+    event.stopPropagation();
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("application/json", JSON.stringify({ columnId, taskId }));
     event.currentTarget.classList.add("is-dragging");
   };
 
   const handleTaskDragOver = (event, columnId, taskId, taskIndex) => {
+    if (!Array.from(event.dataTransfer.types).includes("application/json")) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
 
@@ -46,6 +115,7 @@ export const CardComponents = ({columns, setColumns}) => {
   };
 
   const handleTaskDrop = (event, targetColumnId, targetIndex) => {
+    if (Array.from(event.dataTransfer.types).includes(columnDragType)) return;
     event.preventDefault();
     event.stopPropagation();
 
@@ -65,7 +135,7 @@ export const CardComponents = ({columns, setColumns}) => {
     setDropTarget(null);
   };
 
-  const handleColumnDrop = (event, targetColumnId) => {
+  const handleTaskColumnDrop = (event, targetColumnId) => {
     event.preventDefault();
     if (event.target !== event.currentTarget) return;
 
@@ -157,11 +227,30 @@ export const CardComponents = ({columns, setColumns}) => {
     setEditingTask(null);
   };
 
-  const deleteColumn = (columnId) => {
-  setColumns((prevColumns) =>
-    prevColumns.filter((column) => column.id !== columnId)
-  );
-};
+  const saveColumnEdit = (event) => {
+    event.preventDefault();
+    const title = editingColumn?.title.trim();
+    if (!title) return;
+
+    setColumns((previousColumns) =>
+      previousColumns.map((column) =>
+        column.id === editingColumn.id ? { ...column, title } : column
+      )
+    );
+    setEditingColumn(null);
+  };
+
+  const deleteColumn = (column) => {
+    const taskMessage = column.tasks.length === 1
+      ? "1 task"
+      : `${column.tasks.length} tasks`;
+    if (!window.confirm(`Delete "${column.title}" and its ${taskMessage}?`)) return;
+
+    setColumns((previousColumns) =>
+      previousColumns.filter((currentColumn) => currentColumn.id !== column.id)
+    );
+    setOpenColumnMenuId(null);
+  };
 
   const showModal = (columnId) => {
     setOpenModalId((currentModalId) =>
@@ -173,23 +262,65 @@ export const CardComponents = ({columns, setColumns}) => {
     <div className="main-card-div">
       {columns.map((column) => (
         <div
-          className="card-div"
+          className={`card-div ${columnDropTarget?.columnId === column.id ? `column-drop-${columnDropTarget.position}` : ""}`}
           key={column.id}
+          draggable
+          onDragStart={(event) => handleColumnDragStart(event, column.id)}
+          onDragOver={(event) => handleColumnDragOver(event, column.id)}
+          onDrop={(event) => handleColumnReorderDrop(event, column.id)}
+          onDragEnd={(event) => {
+            event.currentTarget.classList.remove("is-column-dragging");
+            setColumnDropTarget(null);
+          }}
         >
           <div
             className="column-header"
             style={{ backgroundColor: column.color || "#E2E8F0" }}
           >
              <h1>{column.title}</h1>
-             <div className="dots">
-                <button>{column.tasks.length}</button>
-                <div onClick={()=> deleteColumn(column.id)} className="delete-btn"><FaTrash className="column-del-icon"/></div>
+             <div className="column-header-actions">
+                <span className="column-task-count">{column.tasks.length}</span>
+                <button
+                  className="column-menu-trigger"
+                  type="button"
+                  aria-label={`Column actions for ${column.title}`}
+                  aria-haspopup="menu"
+                  aria-expanded={openColumnMenuId === column.id}
+                  onClick={() => setOpenColumnMenuId((currentId) =>
+                    currentId === column.id ? null : column.id
+                  )}
+                >
+                  <FaEllipsisV aria-hidden="true" />
+                </button>
+                {openColumnMenuId === column.id && (
+                  <div className="column-menu-dropdown" role="menu">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="column-menu-item"
+                      onClick={() => {
+                        setEditingColumn({ id: column.id, title: column.title });
+                        setOpenColumnMenuId(null);
+                      }}
+                    >
+                      <FaEdit aria-hidden="true" /> Edit name
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="column-menu-item delete-column-item"
+                      onClick={() => deleteColumn(column)}
+                    >
+                      <FaTrash aria-hidden="true" /> Delete column
+                    </button>
+                  </div>
+                )}
              </div>
           </div>
           <div
             className="card-list"
             onDragOver={(event) => event.preventDefault()}
-            onDrop={(event) => handleColumnDrop(event, column.id)}
+            onDrop={(event) => handleTaskColumnDrop(event, column.id)}
           >
             {column.tasks.map((task, taskIndex) => (
               <div
@@ -299,6 +430,41 @@ export const CardComponents = ({columns, setColumns}) => {
                 Cancel
               </button>
               <button className="create-column" type="submit" disabled={!editingTask.title.trim()}>
+                Save changes
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+      {editingColumn && (
+        <div
+          className="column-modal-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setEditingColumn(null);
+          }}
+        >
+          <form className="column-modal" onSubmit={saveColumnEdit}>
+            <h2>Edit column name</h2>
+            <label htmlFor="edit-column-title">Column header</label>
+            <input
+              id="edit-column-title"
+              type="text"
+              autoFocus
+              maxLength={40}
+              value={editingColumn.title}
+              onChange={(event) =>
+                setEditingColumn((currentColumn) => ({
+                  ...currentColumn,
+                  title: event.target.value,
+                }))
+              }
+              required
+            />
+            <div className="column-modal-actions">
+              <button type="button" onClick={() => setEditingColumn(null)}>
+                Cancel
+              </button>
+              <button className="create-column" type="submit" disabled={!editingColumn.title.trim()}>
                 Save changes
               </button>
             </div>
