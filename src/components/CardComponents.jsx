@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { FaEdit, FaEllipsisV, FaTrash } from "react-icons/fa";
 
 
@@ -10,6 +10,8 @@ export const CardComponents = ({columns, setColumns}) => {
   const [editingTask, setEditingTask] = useState(null);
   const [editingColumn, setEditingColumn] = useState(null);
   const [openColumnMenuId, setOpenColumnMenuId] = useState(null);
+  const columnsContainerRef = useRef(null);
+  const columnPositionsBeforeReorder = useRef(null);
 
   useEffect(() => {
     if (!openColumnMenuId) return undefined;
@@ -29,6 +31,34 @@ export const CardComponents = ({columns, setColumns}) => {
     };
   }, [openColumnMenuId]);
 
+  useLayoutEffect(() => {
+    const previousPositions = columnPositionsBeforeReorder.current;
+    if (!previousPositions) return undefined;
+
+    const columnsToAnimate = Array.from(
+      columnsContainerRef.current?.querySelectorAll("[data-column-id]") ?? []
+    );
+    columnsToAnimate.forEach((element) => {
+      const previousPosition = previousPositions.get(element.dataset.columnId);
+      if (!previousPosition) return;
+
+      const currentPosition = element.getBoundingClientRect();
+      const deltaX = previousPosition.left - currentPosition.left;
+      if (deltaX === 0) return;
+
+      element.style.transition = "none";
+      element.style.transform = `translateX(${deltaX}px)`;
+      element.getBoundingClientRect();
+      requestAnimationFrame(() => {
+        element.style.transition = "";
+        element.style.transform = "";
+      });
+    });
+
+    columnPositionsBeforeReorder.current = null;
+    return undefined;
+  }, [columns]);
+
   const columnDragType = "application/x-task-management-column";
 
   const handleColumnDragStart = (event, columnId) => {
@@ -40,6 +70,22 @@ export const CardComponents = ({columns, setColumns}) => {
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData(columnDragType, columnId);
     event.currentTarget.classList.add("is-column-dragging");
+
+    const dragPreview = event.currentTarget.cloneNode(true);
+    const bounds = event.currentTarget.getBoundingClientRect();
+    dragPreview.classList.add("column-drag-preview");
+    dragPreview.style.width = `${bounds.width}px`;
+    dragPreview.style.height = `${bounds.height}px`;
+    dragPreview.style.position = "fixed";
+    dragPreview.style.top = "-10000px";
+    dragPreview.style.left = "-10000px";
+    document.body.appendChild(dragPreview);
+    event.dataTransfer.setDragImage(
+      dragPreview,
+      event.nativeEvent.offsetX,
+      event.nativeEvent.offsetY
+    );
+    window.setTimeout(() => dragPreview.remove(), 0);
   };
 
   const handleColumnDragOver = (event, targetColumnId) => {
@@ -60,6 +106,15 @@ export const CardComponents = ({columns, setColumns}) => {
     const sourceColumnId = event.dataTransfer.getData(columnDragType);
     const targetBounds = event.currentTarget.getBoundingClientRect();
     const position = event.clientX < targetBounds.left + targetBounds.width / 2 ? "before" : "after";
+    const sourceIndex = columns.findIndex((column) => column.id === sourceColumnId);
+    const targetIndex = columns.findIndex((column) => column.id === targetColumnId);
+
+    if (sourceIndex >= 0 && targetIndex >= 0 && sourceIndex !== targetIndex) {
+      columnPositionsBeforeReorder.current = new Map(
+        Array.from(columnsContainerRef.current?.querySelectorAll("[data-column-id]") ?? [])
+          .map((element) => [element.dataset.columnId, element.getBoundingClientRect()])
+      );
+    }
 
     setColumns((previousColumns) => {
       const sourceIndex = previousColumns.findIndex((column) => column.id === sourceColumnId);
@@ -241,11 +296,6 @@ export const CardComponents = ({columns, setColumns}) => {
   };
 
   const deleteColumn = (column) => {
-    const taskMessage = column.tasks.length === 1
-      ? "1 task"
-      : `${column.tasks.length} tasks`;
-    if (!window.confirm(`Delete "${column.title}" and its ${taskMessage}?`)) return;
-
     setColumns((previousColumns) =>
       previousColumns.filter((currentColumn) => currentColumn.id !== column.id)
     );
@@ -259,11 +309,12 @@ export const CardComponents = ({columns, setColumns}) => {
   };
 
   return (
-    <div className="main-card-div">
+    <div className="main-card-div" ref={columnsContainerRef}>
       {columns.map((column) => (
         <div
           className={`card-div ${columnDropTarget?.columnId === column.id ? `column-drop-${columnDropTarget.position}` : ""}`}
           key={column.id}
+          data-column-id={column.id}
           draggable
           onDragStart={(event) => handleColumnDragStart(event, column.id)}
           onDragOver={(event) => handleColumnDragOver(event, column.id)}

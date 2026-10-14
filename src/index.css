@@ -75,12 +75,27 @@ header{
 }
 .card-div {
   cursor: grab;
+  transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 180ms ease, opacity 180ms ease;
+  will-change: transform;
 }
 .card-div:active {
   cursor: grabbing;
 }
 .card-div.is-column-dragging {
-  opacity: 0.45;
+  opacity: 1;
+  transform: scale(1.02) rotate(1deg);
+  outline: 3px solid #4F46E5;
+  box-shadow: 0 16px 32px rgb(15 23 42 / 18%);
+  cursor: grabbing;
+  z-index: 2;
+}
+.card-div.column-drag-preview {
+  opacity: 1 !important;
+  transform: none !important;
+  outline: 3px solid #4F46E5;
+  outline-offset: 2px;
+  box-shadow: 0 22px 48px rgb(15 23 42 / 32%);
+  filter: saturate(1.12);
 }
 .card-div.column-drop-before::before,
 .card-div.column-drop-after::after {
